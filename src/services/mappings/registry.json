@@ -1,0 +1,7 @@
+[
+    {
+        "slug": "wan2-2-animate-character-swap",
+        "pipeline": "WanVideo Animate - Swap Characters & Lip Sync",
+        "capabilities": ["character-swap", "lip-sync", "pose-retarget"]
+    }
+]
