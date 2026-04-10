@@ -10,6 +10,7 @@ def build(
     param_map: dict[str, tuple[str, str]],
     template_path: str,
     pre_build: Callable[[dict], dict] | None = None,
+    post_build: Callable[[dict, dict], dict] | None = None,
 ) -> dict:
     """Build a ComfyUI workflow by injecting params into a JSON template.
 
@@ -25,5 +26,8 @@ def build(
     for param_name, (node_id, field) in param_map.items():
         if param_name in params:
             workflow[node_id]["inputs"][field] = params[param_name]
+
+    if post_build:
+        workflow = post_build(workflow, params)
 
     return workflow

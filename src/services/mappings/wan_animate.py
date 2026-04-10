@@ -40,10 +40,6 @@ PARAM_MAP = {
     "pose_strength":         ("62",  "pose_strength"),
     "face_strength":         ("62",  "face_strength"),
 
-    # Context
-    "context_frames":        ("110", "context_frames"),
-    "context_overlap":       ("110", "context_overlap"),
-
     # Output - Node 30 (Video 2)
     "output_frame_rate":     ("30",  "frame_rate"),
     "output_crf":            ("30",  "crf"),
@@ -133,16 +129,6 @@ PARAM_META = {
         "group": "Animate Embeds",
         "description": "How strongly the face is swapped from the reference image",
     },
-    "context_frames": {
-        "label": "Context Frames",
-        "group": "Context",
-        "description": "Number of frames the AI processes at once. More = smoother but uses more memory",
-    },
-    "context_overlap": {
-        "label": "Context Overlap",
-        "group": "Context",
-        "description": "Overlap between frame batches. Higher = smoother transitions between batches",
-    },
     "output_frame_rate": {
         "label": "Frame Rate",
         "group": "Output",
@@ -163,7 +149,7 @@ def pre_build(params: dict) -> dict:
     if not params.get("negative_prompt"):
         params["negative_prompt"] = NEGATIVE_PROMPT
 
-    # Preserve aspect ratio and adjust context_frames based on input video
+    # Preserve aspect ratio based on input video
     input_video = params.get("input_video")
     requested_width = params.get("width")
     requested_height = params.get("height")
@@ -233,6 +219,34 @@ def pre_build(params: dict) -> dict:
             except Exception:
                 pass
 
+        # Validate video frame count
+        if video_frame_count:
+            # Validate: frames <= 81
+            if video_frame_count > 81:
+                raise ValueError(
+                    f"Video has {video_frame_count} frames (max: 81). Please trim to 81 frames or less."
+                )
+
+            # Validate: frames = 4n + 1 (i.e., 1, 5, 9, 13, ..., 77, 81)
+            if (video_frame_count - 1) % 4 != 0:
+                # Calculate nearest valid frame counts
+                n_lower = (video_frame_count - 1) // 4
+                n_upper = n_lower + 1
+                valid_lower = 4 * n_lower + 1
+                valid_upper = 4 * n_upper + 1
+
+                # Only show valid_upper if it's <= 81
+                if valid_upper <= 81:
+                    suggestion = f"{valid_lower} or {valid_upper}"
+                else:
+                    suggestion = f"{valid_lower}"
+
+                raise ValueError(
+                    f"Video has {video_frame_count} frames. Frame count must be of the form 4k+1. Valid counts: {suggestion}. Please trim your video."
+                )
+
+            print(f"[WAN] Video frame validation passed: {video_frame_count} frames (valid: ≤81 and 4n+1 format)")
+
         # Update dimensions to maintain aspect ratio
         if video_dims and requested_width and requested_height:
             original_width, original_height = video_dims
@@ -246,22 +260,10 @@ def pre_build(params: dict) -> dict:
             params["width"] = new_width
             params["height"] = new_height
 
-        # Adjust context_frames if it exceeds video frame count
-        if video_frame_count:
-            context_frames = params.get("context_frames", 20)
-            if context_frames > video_frame_count:
-                # Set context_frames to video_frame_count or slightly less
-                params["context_frames"] = video_frame_count
-                # Also adjust context_overlap if needed
-                context_overlap = params.get("context_overlap", 10)
-                if context_overlap >= video_frame_count // 2:
-                    params["context_overlap"] = max(0, video_frame_count // 4)
-
-        # Use input video's frame rate to preserve all frames (unless user wants custom)
-        use_custom_frame_rate = params.get("use_custom_frame_rate", False)
-        print(f"[WAN] Auto-detection: use_custom={use_custom_frame_rate}, video_fps={video_fps}, video_frames={video_frame_count}")
-        if video_fps and not use_custom_frame_rate:
-            # Auto-detect: Override output_frame_rate with input fps to ensure no frame loss
+        # Always auto-detect and use input video's frame rate
+        print(f"[WAN] Auto-detection: video_fps={video_fps}, video_frames={video_frame_count}")
+        if video_fps:
+            # Auto-detect: Set output_frame_rate with input fps to ensure no frame loss
             detected_fps = int(round(video_fps))
             print(f"[WAN] Setting frame rate to detected: {detected_fps} fps")
             params["output_frame_rate"] = detected_fps
@@ -272,14 +274,15 @@ def pre_build(params: dict) -> dict:
             params["preprocess_frame_rate_vitpose"] = detected_fps
             params["preprocess_frame_rate_posedraw"] = detected_fps
         else:
-            # When using custom frame rate, both videos should use the same custom rate
-            if "output_frame_rate" in params:
-                print(f"[WAN] Using custom frame rate: {params['output_frame_rate']} fps")
-                params["output_frame_rate_video1"] = params["output_frame_rate"]
-                params["output_frame_rate_video1_actual"] = params["output_frame_rate"]
-                # Set custom frame rate for preprocessing nodes too
-                params["preprocess_frame_rate_vitpose"] = params["output_frame_rate"]
-                params["preprocess_frame_rate_posedraw"] = params["output_frame_rate"]
+            # Fallback if FPS detection fails: use default from workflow
+            print(f"[WAN] Warning: Could not detect video FPS, using default frame rate")
+            # Set frame rate for all nodes to ensure consistency
+            default_fps = params.get("output_frame_rate", 16)
+            params["output_frame_rate"] = default_fps
+            params["output_frame_rate_video1"] = default_fps
+            params["output_frame_rate_video1_actual"] = default_fps
+            params["preprocess_frame_rate_vitpose"] = default_fps
+            params["preprocess_frame_rate_posedraw"] = default_fps
 
         # Sync CRF for Video 1 with Video 2 (both nodes)
         if "output_crf" in params:
@@ -287,3 +290,30 @@ def pre_build(params: dict) -> dict:
             params["output_crf_video1_actual"] = params["output_crf"]
 
     return params
+
+
+def post_build(workflow: dict, params: dict) -> dict:
+    """Modify workflow after parameter injection based on mode."""
+    mode = params.get("mode", "replace")
+
+    print(f"[WAN] post_build: mode={mode}")
+
+    if mode == "animate":
+        # For animate mode, disconnect bg_images and mask from Node 62 (WanVideo Animate Embeds)
+        # This allows full scene transformation instead of just character swap
+        if "62" in workflow and "inputs" in workflow["62"]:
+            print("[WAN] post_build: Animate mode - Disconnecting bg_images and mask from Node 62")
+
+            # Remove bg_images and mask connections
+            if "bg_images" in workflow["62"]["inputs"]:
+                del workflow["62"]["inputs"]["bg_images"]
+                print("[WAN] post_build: Removed bg_images connection")
+
+            if "mask" in workflow["62"]["inputs"]:
+                del workflow["62"]["inputs"]["mask"]
+                print("[WAN] post_build: Removed mask connection")
+    else:
+        # Replace mode - keep connections as is (default behavior)
+        print("[WAN] post_build: Replace mode - Keeping bg_images and mask connections")
+
+    return workflow

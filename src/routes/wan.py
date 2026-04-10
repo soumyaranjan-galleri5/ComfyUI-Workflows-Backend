@@ -119,6 +119,65 @@ async def upload_file(slug: str, file: UploadFile):
     file_path = comfyui_input / unique_name
     file_path.write_bytes(file_content)
 
+    # Validate video frame count if it's a video
+    if is_video:
+        import subprocess
+        try:
+            # Get frame count using ffprobe
+            cmd = [
+                "ffprobe", "-v", "error",
+                "-select_streams", "v:0",
+                "-count_packets",
+                "-show_entries", "stream=nb_read_packets",
+                "-of", "csv=p=0",
+                str(file_path)
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0 and result.stdout.strip():
+                frame_count = int(result.stdout.strip())
+
+                # Validate: frames <= 81
+                if frame_count > 81:
+                    # Clean up uploaded file
+                    file_path.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Video has {frame_count} frames (max: 81). Please trim to 81 frames or less."
+                    )
+
+                # Validate: frames = 4n + 1 (i.e., 1, 5, 9, 13, ..., 77, 81)
+                if (frame_count - 1) % 4 != 0:
+                    # Calculate nearest valid frame counts
+                    n_lower = (frame_count - 1) // 4
+                    n_upper = n_lower + 1
+                    valid_lower = 4 * n_lower + 1
+                    valid_upper = 4 * n_upper + 1
+
+                    # Only show valid_upper if it's <= 81
+                    if valid_upper <= 81:
+                        suggestion = f"{valid_lower} or {valid_upper}"
+                    else:
+                        suggestion = f"{valid_lower}"
+
+                    # Clean up uploaded file
+                    file_path.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Video has {frame_count} frames. Frame count must be of the form 4k+1. Valid counts: {suggestion}. Please trim your video."
+                    )
+
+                print(f"[UPLOAD] Video validation passed: {frame_count} frames (valid: ≤81 and 4n+1 format)")
+        except subprocess.TimeoutExpired:
+            # If ffprobe times out, just log and continue (don't block upload)
+            print(f"[UPLOAD] Warning: ffprobe timeout for {unique_name}, skipping frame validation")
+        except HTTPException:
+            # Re-raise HTTP exceptions (validation errors)
+            raise
+        except Exception as e:
+            # If frame validation fails for any other reason, log but don't block upload
+            print(f"[UPLOAD] Warning: Could not validate frames for {unique_name}: {e}")
+
     # Upload to S3 and get preview URL
     content_type = file.content_type or "application/octet-stream"
     try:
@@ -151,7 +210,11 @@ async def generate_video(slug: str, request: WanAnimateRequest):
     pprint.pprint(params, width=120, sort_dicts=False)
 
     if mapping.pre_build:
-        params = mapping.pre_build(params)
+        try:
+            params = mapping.pre_build(params)
+        except ValueError as e:
+            # Validation error from pre_build (e.g., invalid video frame count)
+            raise HTTPException(status_code=400, detail=str(e))
 
     print("\n✨ PARAMS AFTER PRE_BUILD (modified):")
     pprint.pprint(params, width=120, sort_dicts=False)
@@ -164,6 +227,7 @@ async def generate_video(slug: str, request: WanAnimateRequest):
         param_map=mapping.PARAM_MAP,
         template_path=mapping.TEMPLATE,
         pre_build=None,  # Already ran pre_build above
+        post_build=mapping.post_build if hasattr(mapping, 'post_build') else None,
     )
 
     print("\n🔧 WORKFLOW NODES (after param injection):")

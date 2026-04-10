@@ -8,6 +8,7 @@ class WanAnimateRequest(BaseModel):
     input_video: str
     positive_prompt: str
     negative_prompt: str | None = None
+    mode: str = Field(default="replace", pattern="^(replace|animate)$", description="replace or animate mode")
 
     # Resolution
     width: int = 1080
@@ -26,15 +27,6 @@ class WanAnimateRequest(BaseModel):
     # Animate embeds
     pose_strength: float = Field(default=1.0, ge=0, le=2)
     face_strength: float = Field(default=1.0, ge=0, le=2)
-
-    # Context
-    context_frames: int = Field(default=81, ge=1)
-    context_overlap: int = Field(default=32, ge=0)
-
-    # Output
-    output_frame_rate: int = Field(default=16, ge=1, le=60)
-    use_custom_frame_rate: bool = Field(default=False, description="If False, auto-detect from input video")
-    output_crf: int = Field(default=19, ge=0, le=51)
 
 
 class VideoMetadata(BaseModel):
