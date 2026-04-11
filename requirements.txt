@@ -1,6 +1,13 @@
-fastapi
-uvicorn[standard]
-pydantic-settings
-python-dotenv
-httpx
-python-multipart
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Configuration & Settings
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# HTTP Client
+httpx>=0.26.0
+
+# File Upload Support
+python-multipart>=0.0.6
