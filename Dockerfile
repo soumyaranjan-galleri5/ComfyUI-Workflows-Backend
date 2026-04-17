@@ -3,9 +3,10 @@
 # Set working directory
 WORKDIR /backend
 
-# Install system dependencies including FFmpeg
+# Install system dependencies including FFmpeg and libmagic (for python-magic)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better layer caching

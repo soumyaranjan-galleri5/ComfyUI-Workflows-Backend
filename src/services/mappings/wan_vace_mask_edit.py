@@ -12,51 +12,39 @@ NEGATIVE_PROMPT = (
 )
 
 WORKFLOW_SUBDIR = "wan"
-TEMPLATE = "final_v1.0_Workflow_ComfyUI_Wan_2.2_Animate_Swap_Characters_and_Lip-Sync.json"
+TEMPLATE = "final_v1.0_benji_Wan_2.2_Fun_VACE_Mask Edit_ControlNet.json"
 
 # { param_name: (node_id, field_name) }
 PARAM_MAP = {
     # Inputs
-    "reference_image":       ("57",  "image"),
-    "input_video":           ("63",  "video"),
+    "reference_image":       ("465", "image"),
+    "input_video":           ("460", "video"),
 
     # Prompts
-    "positive_prompt":       ("65",  "positive_prompt"),
-    "negative_prompt":       ("65",  "negative_prompt"),
+    "positive_prompt":       ("15",  "text"),
+    "negative_prompt":       ("16",  "text"),
 
     # Resolution
-    "width":                 ("150", "value"),
-    "height":                ("151", "value"),
+    "width":                 ("19",  "value"),
+    "height":                ("20",  "value"),
+    "frames":                ("21",  "value"),  # Auto-detected from input video
 
     # Sampler
-    "steps":                 ("27",  "steps"),
-    "cfg":                   ("27",  "cfg"),
-    "shift":                 ("27",  "shift"),
-    "seed":                  ("27",  "seed"),
+    "steps":                 ("449", "value"),
+    "shift":                 ("557", "value"),
+    "seed":                  ("448", "value"),
 
-    # LoRA strengths
-    "relight_lora_strength": ("171", "strength_0"),
-    "distill_lora_strength": ("171", "strength_1"),
+    # LoRA strengths - Node 570 (high noise) and Node 569 (low noise)
+    "high_noise_lora_strength": ("570", "strength_model"),
+    "low_noise_lora_strength":  ("569", "strength_model"),
 
-    # Animate embeds
-    "pose_strength":         ("62",  "pose_strength"),
-    "face_strength":         ("62",  "face_strength"),
+    # WanVaceToVideo strength parameters
+    "vace_strength_high":    ("17",  "strength"),  # First pass (high noise)
+    "vace_strength_low":     ("491", "strength"),  # Second pass (low noise)
 
-    # Output - Node 30 (Video 2)
-    "output_frame_rate":     ("30",  "frame_rate"),
-    "output_crf":            ("30",  "crf"),
-
-    # Output - Node 75 (Video 1 intermediate) - not saved, but keep for consistency
-    "output_frame_rate_video1": ("75",  "frame_rate"),
-    "output_crf_video1":        ("75",  "crf"),
-
-    # Output - Node 186 (ACTUAL Video 1 output with audio) - this is the real output!
-    "output_frame_rate_video1_actual": ("186",  "frame_rate"),
-    "output_crf_video1_actual":        ("186",  "crf"),
-
-    # Preprocessing visualization nodes - must match input video frame rate
-    "preprocess_frame_rate_vitpose":  ("174", "frame_rate"),  # Pose/Face detection viz
-    "preprocess_frame_rate_posedraw": ("181", "frame_rate"),  # Pose skeleton draw
+    # Output - Node 32 (VHS_VideoCombine)
+    "output_frame_rate":     ("32",  "frame_rate"),
+    "output_crf":            ("32",  "crf"),
 }
 
 
@@ -64,21 +52,21 @@ PARAM_META = {
     "reference_image": {
         "label": "Reference Image",
         "group": "Inputs",
-        "description": "The face/character image to swap into the video",
+        "description": "The face/character image to use in the video",
     },
     "input_video": {
         "label": "Input Video",
         "group": "Inputs",
-        "description": "The source video whose character will be replaced",
+        "description": "The source video to apply VACE processing to",
     },
     "positive_prompt": {
         "label": "Prompt",
-        "group": "Inputs",
+        "group": "Prompts",
         "description": "Describe what the scene should look like",
     },
     "negative_prompt": {
         "label": "Negative Prompt",
-        "group": "Inputs",
+        "group": "Prompts",
         "description": "Things to avoid in the output (leave empty for default)",
     },
     "width": {
@@ -96,11 +84,6 @@ PARAM_META = {
         "group": "Sampler",
         "description": "How many times the AI refines the video. More = better quality but slower",
     },
-    "cfg": {
-        "label": "CFG",
-        "group": "Sampler",
-        "description": "How closely the AI follows your prompt. Higher = more literal",
-    },
     "shift": {
         "label": "Shift",
         "group": "Sampler",
@@ -111,25 +94,25 @@ PARAM_META = {
         "group": "Sampler",
         "description": "Set to -1 for random. Use a fixed number to reproduce the same result",
     },
-    "relight_lora_strength": {
-        "label": "Relight LoRA",
+    "high_noise_lora_strength": {
+        "label": "High Noise LoRA Strength",
         "group": "LoRA Strengths",
-        "description": "Controls lighting consistency. Lower = subtler, higher = stronger effect",
+        "description": "Strength of the high noise LoRA for first pass processing",
     },
-    "distill_lora_strength": {
-        "label": "Distill LoRA",
+    "low_noise_lora_strength": {
+        "label": "Low Noise LoRA Strength",
         "group": "LoRA Strengths",
-        "description": "Speed optimization strength. Higher = faster but may reduce quality",
+        "description": "Strength of the low noise LoRA for second pass refinement",
     },
-    "pose_strength": {
-        "label": "Pose Strength",
-        "group": "Animate Embeds",
-        "description": "How strongly the body pose is transferred from the source video",
+    "vace_strength_high": {
+        "label": "VACE Strength (High Noise)",
+        "group": "VACE Settings",
+        "description": "Strength of VACE processing in first pass (0.0-1.0)",
     },
-    "face_strength": {
-        "label": "Face Strength",
-        "group": "Animate Embeds",
-        "description": "How strongly the face is swapped from the reference image",
+    "vace_strength_low": {
+        "label": "VACE Strength (Low Noise)",
+        "group": "VACE Settings",
+        "description": "Strength of VACE processing in second pass (0.0-1.0)",
     },
     "output_frame_rate": {
         "label": "Frame Rate",
@@ -144,14 +127,18 @@ PARAM_META = {
 }
 
 
+
 def pre_build(params: dict) -> dict:
+    """Pre-process parameters before building the workflow."""
+    # Generate random seed if not specified
     if params.get("seed", -1) == -1:
         params["seed"] = random.randint(0, 2**32)
 
+    # Use default negative prompt if not provided
     if not params.get("negative_prompt"):
         params["negative_prompt"] = NEGATIVE_PROMPT
 
-    # Preserve aspect ratio based on input video
+    # Process input video to extract metadata
     input_video = params.get("input_video")
     requested_width = params.get("width")
     requested_height = params.get("height")
@@ -160,29 +147,26 @@ def pre_build(params: dict) -> dict:
         video_dims = None
         video_frame_count = None
         import subprocess
+        import json
 
-        # Check if input_video is a URL
+        # Determine video source (URL or local file)
         if input_video.startswith("http://") or input_video.startswith("https://"):
-            # For URLs, use ffprobe directly on the URL
             video_source = input_video
         else:
-            # For uploaded filenames, check in ComfyUI input folder
             video_source = str(Path(settings.comfyui_path) / settings.comfyui_input_folder / input_video)
 
-        # Get video dimensions, frame count, and frame rate
+        # Get video metadata: dimensions, frame count, and frame rate
         video_fps = None
         try:
-            # Get dimensions and frame rate
             cmd = [
                 "ffprobe", "-v", "error",
-                "-select_streams", "v:0", #v:0 is the first video stream, that will be required to extract video metadata
+                "-select_streams", "v:0",
                 "-show_entries", "stream=width,height,nb_frames,r_frame_rate",
                 "-of", "json",
                 video_source
             ]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0 and result.stdout.strip():
-                import json
                 data = json.loads(result.stdout)
                 if data.get("streams") and len(data["streams"]) > 0:
                     stream = data["streams"][0]
@@ -196,7 +180,7 @@ def pre_build(params: dict) -> dict:
                     if nb_frames and nb_frames != "N/A":
                         video_frame_count = int(nb_frames)
 
-                    # Get frame rate (format: "24/1") fraction format
+                    # Get frame rate (format: "24/1")
                     r_frame_rate = stream.get("r_frame_rate")
                     if r_frame_rate:
                         num, denom = map(int, r_frame_rate.split('/'))
@@ -204,7 +188,7 @@ def pre_build(params: dict) -> dict:
         except Exception:
             pass
 
-        # If nb_frames wasn't available, try alternative method
+        # Fallback method for frame count if not available
         if not video_frame_count:
             try:
                 cmd = [
@@ -221,7 +205,7 @@ def pre_build(params: dict) -> dict:
             except Exception:
                 pass
 
-        # Validate video frame count
+        # Validate and set frame count
         if video_frame_count:
             # Validate: frames <= 81
             if video_frame_count > 81:
@@ -231,99 +215,53 @@ def pre_build(params: dict) -> dict:
 
             # Validate: frames = 4n + 1 (i.e., 1, 5, 9, 13, ..., 77, 81)
             if (video_frame_count - 1) % 4 != 0:
-                # Calculate nearest valid frame counts
                 n_lower = (video_frame_count - 1) // 4
                 n_upper = n_lower + 1
                 valid_lower = 4 * n_lower + 1
                 valid_upper = 4 * n_upper + 1
 
-                # Only show valid_upper if it's <= 81
                 if valid_upper <= 81:
                     suggestion = f"{valid_lower} or {valid_upper}"
                 else:
                     suggestion = f"{valid_lower}"
 
                 raise ValueError(
-                    f"Video has {video_frame_count} frames. Frame count must be of the form 4k+1. Valid counts: {suggestion}. Please trim your video."
+                    f"Video has {video_frame_count} frames. Frame count must be of the form 4k+1. "
+                    f"Valid counts: {suggestion}. Please trim your video."
                 )
 
-            print(f"[WAN] Video frame validation passed: {video_frame_count} frames (valid: ≤81 and 4n+1 format)")
+            print(f"[WAN VACE] Video frame validation passed: {video_frame_count} frames")
 
-        # Update dimensions to maintain aspect ratio
-        if video_dims and requested_width and requested_height:
+            # Set frames parameter if not provided or override with detected
+            params["frames"] = video_frame_count
+
+        # Set output dimensions: preserve input aspect ratio, scale to requested height
+        if video_dims and requested_height:
             original_width, original_height = video_dims
-
-            # Calculate new dimensions maintaining aspect ratio based on requested height
             new_width, new_height = wan_calculate_aspect_ratio_dimensions(
                 requested_height, original_width, original_height
             )
-
-            # Update params with aspect-ratio-corrected dimensions
             params["width"] = new_width
             params["height"] = new_height
+            print(f"[WAN VACE] Dimensions: {original_width}x{original_height} -> {new_width}x{new_height}")
 
-        # Always auto-detect and use input video's frame rate
-        print(f"[WAN] Auto-detection: video_fps={video_fps}, video_frames={video_frame_count}")
+        # Auto-detect and set frame rate
         if video_fps:
-            # Auto-detect: Set output_frame_rate with input fps to ensure no frame loss
             detected_fps = int(round(video_fps))
-            print(f"[WAN] Setting frame rate to detected: {detected_fps} fps")
+            print(f"[WAN VACE] Setting frame rate to detected: {detected_fps} fps")
             params["output_frame_rate"] = detected_fps
-            # Set frame rate for BOTH Video 1 nodes (75 and 186)
-            params["output_frame_rate_video1"] = detected_fps
-            params["output_frame_rate_video1_actual"] = detected_fps
-            # Set frame rate for preprocessing visualization nodes (174, 181)
-            params["preprocess_frame_rate_vitpose"] = detected_fps
-            params["preprocess_frame_rate_posedraw"] = detected_fps
         else:
-            # Fallback if FPS detection fails: use default from workflow
-            print(f"[WAN] Warning: Could not detect video FPS, using default frame rate")
-            # Set frame rate for all nodes to ensure consistency
-            default_fps = params.get("output_frame_rate", 16)
+            # Fallback to default if FPS detection fails
+            default_fps = params.get("output_frame_rate", 24)
             params["output_frame_rate"] = default_fps
-            params["output_frame_rate_video1"] = default_fps
-            params["output_frame_rate_video1_actual"] = default_fps
-            params["preprocess_frame_rate_vitpose"] = default_fps
-            params["preprocess_frame_rate_posedraw"] = default_fps
-
-        # Sync CRF for Video 1 with Video 2 (both nodes)
-        if "output_crf" in params:
-            params["output_crf_video1"] = params["output_crf"]
-            params["output_crf_video1_actual"] = params["output_crf"]
+            print(f"[WAN VACE] Using default frame rate: {default_fps} fps")
 
     return params
 
 
-def post_build(workflow: dict, params: dict) -> dict:
-    """Modify workflow after parameter injection based on mode."""
-    mode = params.get("mode", "replace")
-
-    print(f"[WAN] post_build: mode={mode}")
-
-    if mode == "animate":
-        # For animate mode, disconnect bg_images and mask from Node 62 (WanVideo Animate Embeds)
-        # This allows full scene transformation instead of just character swap
-        if "62" in workflow and "inputs" in workflow["62"]:
-            print("[WAN] post_build: Animate mode - Disconnecting bg_images and mask from Node 62")
-
-            # Remove bg_images and mask connections
-            if "bg_images" in workflow["62"]["inputs"]:
-                del workflow["62"]["inputs"]["bg_images"]
-                print("[WAN] post_build: Removed bg_images connection")
-
-            if "mask" in workflow["62"]["inputs"]:
-                del workflow["62"]["inputs"]["mask"]
-                print("[WAN] post_build: Removed mask connection")
-    else:
-        # Replace mode - keep connections as is (default behavior)
-        print("[WAN] post_build: Replace mode - Keeping bg_images and mask connections")
-
-    return workflow
-
-
 def validate_upload(file_path: Path, file_type: str) -> None:
     """
-    Validate uploaded files for WAN Animate workflow.
+    Validate uploaded files for WAN VACE workflow.
 
     For images, validates:
     - Image is not corrupted (can be decoded)
@@ -348,13 +286,13 @@ def validate_upload(file_path: Path, file_type: str) -> None:
                 with Image.open(file_path) as img2:
                     width, height = img2.size
 
-                    # Validate dimensions (max 1080p for WAN Animate)
+                    # Validate dimensions (max 1080p for WAN VACE)
                     if width > 1080 or height > 1080:
                         raise ValueError(
                             f"Image dimensions too large: {width}x{height} (max: 1080x1080)"
                         )
 
-                    print(f"[WAN Animate Upload] Image validation passed: {width}x{height} {img2.format}")
+                    print(f"[WAN VACE Upload] Image validation passed: {width}x{height} {img2.format}")
 
         except ValueError:
             # Re-raise validation errors
@@ -380,7 +318,7 @@ def validate_upload(file_path: Path, file_type: str) -> None:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
         if result.returncode != 0 or not result.stdout.strip():
-            print(f"[WAN Animate Upload] Warning: Could not detect frame count")
+            print(f"[WAN VACE Upload] Warning: Could not detect frame count")
             return  # Skip validation if ffprobe fails
 
         frame_count = int(result.stdout.strip())
@@ -408,12 +346,12 @@ def validate_upload(file_path: Path, file_type: str) -> None:
                 f"Valid counts: {suggestion}. Please trim your video."
             )
 
-        print(f"[WAN Animate Upload] Video validation passed: {frame_count} frames")
+        print(f"[WAN VACE Upload] Video validation passed: {frame_count} frames")
 
     except subprocess.TimeoutExpired:
-        print(f"[WAN Animate Upload] Warning: ffprobe timeout, skipping validation")
+        print(f"[WAN VACE Upload] Warning: ffprobe timeout, skipping validation")
     except ValueError:
         # Re-raise validation errors
         raise
     except Exception as e:
-        print(f"[WAN Animate Upload] Warning: Could not validate video: {e}")
+        print(f"[WAN VACE Upload] Warning: Could not validate video: {e}")

@@ -110,15 +110,19 @@ def get_video_dimensions(video_path: Path) -> Optional[tuple[int, int]]:
     return None
 
 
-def calculate_aspect_ratio_dimensions(
+def wan_calculate_aspect_ratio_dimensions(
     target_height: int,
     original_width: int,
     original_height: int
 ) -> tuple[int, int]:
     """Calculate width that maintains aspect ratio for given target height.
 
+    Width is rounded to the nearest multiple of 8 for WAN VAE compatibility
+    (8x spatial downsampling). Caller must pass target_height divisible by 8
+    (e.g., 480, 720).
+
     Args:
-        target_height: Desired output height
+        target_height: Desired output height (must be multiple of 8)
         original_width: Original video width
         original_height: Original video height
 
