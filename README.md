@@ -1,82 +1,67 @@
 # ComfyUI Workflows Backend
 
-Backend service for ComfyUI Workflows App.
+Backend service for ComfyUI workflows via REST API.
 
-## Prerequisites
+## Overview
 
-- Python 3.10 or higher
-- FFmpeg (for video processing)
-- ComfyUI installed and running
-- AWS S3 bucket (optional, for cloud storage)
+FastAPI-based backend that provides REST API endpoints for ComfyUI workflow execution. The service handles:
 
-## Installation
+- Input validation and preprocessing
+- Workflow parameter mapping to ComfyUI nodes
+- Workflow execution management
+- Output retrieval and S3 upload
 
-### 1. Clone the Repository
+**Note:** A separate service running the ComfyUI API is required for workflow execution.
 
-```bash
-git clone <your-repo-url>
-cd <repo-name>/backend
+### Architecture
+
+```
+API Request → Input Validation → Parameter Mapping → Workflow Builder
+    → ComfyUI Execution → Output Processing → S3 Upload → Response
 ```
 
-### 2. Create Virtual Environment
+### Key Components
 
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Install FFmpeg
-
-**Ubuntu/Debian:**
-```bash
-sudo apt update
-sudo apt install ffmpeg
-```
-
-### 5. Configure Environment
-
-Create a `.env` file in the backend directory:
-
-
-### 6. Set Up ComfyUI
-
-Ensure ComfyUI is installed with required models:
-
-```bash
-# Required models in ComfyUI/models/
-├── checkpoints/
-│   └── Wan2_2-Animate-14B_fp8_e4m3fn_scaled_KJ.safetensors
-├── vae/
-│   └── wan_2.1_vae.safetensors
-├── text_encoders/
-│   └── umt5-xxl-enc-bf16.safetensors
-├── clip_vision/
-│   └── clip_vision_h.safetensors
-└── loras/
-    ├── WanAnimate_relight_lora_fp16.safetensors
-    └── lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors
-```
+- **Routes**: API endpoint definitions
+- **Schemas**: Pydantic models for request/response validation
+- **Services**: Core logic
+  - `workflow_builder.py`: Constructs ComfyUI workflow JSON
+  - `workflow_runner.py`: Manages execution lifecycle
+  - `comfyui_client.py`: ComfyUI API communication
+  - `s3_upload.py`: Async S3 upload with disconnect detection
+  - `mappings/`: Parameter translation for each workflow
+- **Utils**: Helper functions for video processing and database operations
 
 ## API Endpoints
 
-### List Pipelines
+**Note:** All endpoints are prefixed with a model-specific route (e.g., `/wan` for WAN models). Replace `{model}` with your model prefix.
+
+### List Workflows
 
 ```bash
-GET /wan/list
+GET /{model}/list
 ```
 
-Returns available WanVideo pipelines.
+Returns available workflows with metadata.
+
+**Response:**
+```json
+{
+  "pipelines": [
+    {
+      "slug": "workflow-slug",
+      "name": "Workflow Name",
+      "description": "...",
+      "parameters": {...}
+    }
+  ]
+}
+```
 
 ### Upload File
 
 ```bash
-POST /wan/{slug}/upload
+POST /{model}/{slug}/upload
 Content-Type: multipart/form-data
 
 {
@@ -84,116 +69,297 @@ Content-Type: multipart/form-data
 }
 ```
 
-Upload reference image or input video. Returns:
-- `filename`: Unique filename
-- `preview_url`: S3 URL (if configured)
+Upload reference images or input videos for workflow execution.
 
-**Validation:**
-- Videos: ≤81 frames, must be 4k+1 format (1, 5, 9, 13, ..., 77, 81)
-- Images: PNG, JPG, JPEG, WEBP (max 50MB)
-- Videos: MP4 (max 500MB)
-
-### Generate Video
-
-```bash
-POST /wan/{slug}
-Content-Type: application/json
-
+**Response:**
+```json
 {
-  "reference_image": "image.jpg",
-  "input_video": "video.mp4",
-  "positive_prompt": "A person in casual clothing...",
-  "negative_prompt": "low quality, blurry...",
-  "mode": "replace",  // or "animate"
-  "height": 720,
-  "steps": 8,
-  "cfg": 1,
-  "shift": 8,
-  "seed": -1,
-  "relight_lora_strength": 0.7,
-  "distill_lora_strength": 1.2,
-  "pose_strength": 1.0,
-  "face_strength": 1.0
+  "filename": "unique_filename.mp4",
+  "preview_url": "https://s3.../file.mp4"
 }
 ```
 
-Returns:
-- `output_urls`: Array of generated video URLs
-- `output_metadata`: Video metadata (width, height, fps, etc.)
-- `generation_id`: Unique generation ID
+**Validation:**
+- Images: PNG, JPG, JPEG, WEBP (max 15MB)
+- Videos: MP4 (max 50MB)
+- MIME type verification
+- Corruption detection
+
+### Execute Workflow
+
+```bash
+POST /{model}/{slug}
+Content-Type: application/json
+
+{
+  // Workflow-specific parameters
+}
+```
+
+Execute a ComfyUI workflow with provided parameters.
+
+**Response:**
+```json
+{
+  "generation_id": "uuid",
+  "output_urls": ["https://s3.../output.mp4"],
+  "output_metadata": {
+    "width": 832,
+    "height": 720,
+    "fps": 30,
+    "frames": 53,
+    "duration_seconds": 2.5
+  }
+}
+```
+
+### Get Generation (To be implemented)
+
+```bash
+GET /{model}/generation/{generation_id}
+```
+
+Retrieve generation status and results by ID.
+
+## Set Up Instructions
+
+### Prerequisites
+
+- Python 3.10 or higher
+- FFmpeg (for video processing)
+- ComfyUI installed and running
+- AWS S3 bucket (for output storage)
+
+### 1. Create Virtual Environment
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+### 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Install FFmpeg
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+### 4. Run Backend Server
+
+```bash
+uvicorn src.main:app --reload --port 8000
+```
+
+The API will be available at `http://localhost:8000`
+
+API documentation: `http://localhost:8000/docs`
+
+### 5. Verify Installation
+
+```bash
+# Check API health
+curl http://localhost:8000/health
+
+# List available workflows (replace {model} with your model prefix)
+curl http://localhost:8000/{model}/list
+```
 
 ## Project Structure
 
 ```
 backend/
 ├── src/
-│   ├── main.py                 # FastAPI application entry point
-│   ├── routes/
-│   │   └── wan.py             # WanVideo API routes
-│   ├── schemas/
-│   │   └── wan.py             # Pydantic models
-│   ├── services/
-│   │   ├── mappings/
-│   │   │   ├── wan_animate.py # Workflow parameter mapping
-│   │   │   └── registry.json  # Pipeline registry
-│   │   ├── workflow_builder.py  # Workflow construction
-│   │   ├── workflow_runner.py   # ComfyUI execution
-│   │   ├── comfyui_client.py    # ComfyUI API client
-│   │   └── s3_upload.py         # S3 file upload
+│   ├── main.py
+│   ├── exceptions.py
 │   ├── config/
-│   │   └── settings.py        # Configuration management
+│   │   └── settings.py
+│   ├── routes/
+│   │   └── wan.py
+│   ├── schemas/
+│   │   └── wan.py
+│   ├── services/
+│   │   ├── comfyui_client.py
+│   │   ├── s3_upload.py
+│   │   ├── workflow_builder.py
+│   │   ├── workflow_runner.py
+│   │   ├── param_inspector.py
+│   │   └── mappings/
+│   │       ├── registry.json
+│   │       ├── wan_animate.py
+│   │       └── wan_vace_mask_edit.py
 │   └── utils/
-│       ├── utils_video.py     # Video processing utilities
-│       └── utils_db.py        # Generation history tracking
+│       ├── utils_video.py
+│       └── utils_db.py
 ├── comfy_workflows/
-│   └── wan/                   # ComfyUI workflow templates
-├── dummy_db/                  # Local generation history
-├── requirements.txt           # Python dependencies
-└── README.md                  # This file
+│   └── wan/
+├── dummy_db/
+│   └── wan_generations.json
+├── requirements.txt
+└── README.md
 ```
 
-## Video Requirements
+## Adding New Pipelines
 
-### Frame Count
-- **Maximum:** 81 frames
-- **Format:** Must be of the form `4k + 1` where k is an integer
+### Step 1: Create the Workflow JSON
 
-## Mode Types
+1. Design your workflow in ComfyUI
+2. Export the workflow as JSON (via "Save (API Format)")
+3. Save it in the appropriate directory:
 
-### Replace Mode (Default)
-- Swaps character face/appearance
-- Preserves original background and lighting
-- Uses background mask for clean separation
-- Best for: Character replacement, face swaps
-
-**Workflow behavior:**
-- Connects `bg_images` and `mask` to Node 62
-
-### Animate Mode
-- Full scene transformation
-- AI-generated backgrounds
-- Complete creative control
-- Best for: Artistic transformations, scene changes
-
-**Workflow behavior:**
-- Disconnects `bg_images` and `mask` from Node 62
-
-## Troubleshooting
-
-### Video Frame Validation Error
-
-```
-Video has 72 frames. Frame count must be of the form 4k+1. Valid counts: 69 or 73.
+```bash
+mkdir -p comfy_workflows/wan/my_new_workflow
+# Save your workflow.json here
 ```
 
-**Solution:**
-Trim your video to match a valid frame count using FFmpeg.
+### Step 2: Create a Mapping File
 
+Create `src/services/mappings/my_new_workflow.py`:
 
-### Adding New Pipelines
+```python
+from typing import Any
 
-1. Create workflow JSON in `comfy_workflows/<pipeline_name>/`
-2. Create mapping file in `src/services/mappings/<pipeline_name>.py`
-3. Add schema in `src/schemas/<pipeline_name>.py`
-4. Register in `src/services/mappings/registry.json`
-5. Add route in `src/routes/<pipeline_name>.py`
+# Map API parameters to ComfyUI node inputs
+PARAM_MAP = {
+    "api_param_name": ("node_id", "input_name"),
+    # Example:
+    # "positive_prompt": ("6", "text"),
+    # "steps": ("10", "steps"),
+}
+
+# Define parameter metadata
+PARAM_META = {
+    "api_param_name": {
+        "type": "string",  # or "integer", "float", "boolean"
+        "default": "default_value",
+        "required": True,
+        "description": "Parameter description"
+    }
+}
+
+def pre_build(params: dict[str, Any]) -> dict[str, Any]:
+    """
+    Optional: Transform parameters before building workflow.
+
+    Use this for:
+    - Validation
+    - Computing derived values
+    - Preprocessing inputs
+    """
+    return params
+
+def post_build(workflow: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
+    """
+    Optional: Modify workflow JSON after parameter mapping.
+
+    Use this for:
+    - Conditional node connections
+    - Dynamic workflow structure
+    - Complex transformations
+    """
+    return workflow
+```
+
+### Step 3: Register in Registry
+
+Add entry to `src/services/mappings/registry.json`:
+
+```json
+{
+  "slug": "my-workflow-slug",
+  "pipeline": "My Workflow Name - Brief Description",
+  "capabilities": [
+    "capability-1",
+    "capability-2"
+  ]
+}
+```
+
+### Step 4: Create Pydantic Schemas
+
+Add to `src/schemas/{model}.py` (e.g., `src/schemas/wan.py` for WAN models):
+
+```python
+from pydantic import BaseModel, Field
+
+class MyWorkflowRequest(BaseModel):
+    """Request schema for my workflow."""
+    api_param_name: str = Field(..., description="Parameter description")
+    # Add all required and optional parameters
+
+class MyWorkflowResponse(BaseModel):
+    """Response schema for my workflow."""
+    generation_id: str
+    output_urls: list[str]
+    output_metadata: dict
+```
+
+### Step 5: Add API Route
+
+In `src/routes/{model}.py` (e.g., `src/routes/wan.py` for WAN models):
+
+1. Import your mapping and schemas:
+```python
+from src.services.mappings import my_new_workflow
+from src.schemas.wan import MyWorkflowRequest, MyWorkflowResponse
+```
+
+2. Add to `SLUG_TO_MAPPING`:
+```python
+SLUG_TO_MAPPING = {
+    # ... existing mappings
+    "my-workflow-slug": my_new_workflow,
+}
+```
+
+3. Create the endpoint:
+```python
+@router.post("/my-workflow-slug", response_model=MyWorkflowResponse)
+async def generate_my_workflow(request: MyWorkflowRequest):
+    """Execute my custom workflow."""
+    slug = "my-workflow-slug"
+    mapping = my_new_workflow
+    params = request.model_dump()
+
+    generation_id = str(uuid.uuid4())
+    log_generation_request(DB_PATH, generation_id, slug, params)
+
+    try:
+        workflow_json = workflow_builder.build(
+            registry_path=REGISTRY_PATH,
+            slug=slug,
+            params=params,
+            mapping=mapping
+        )
+
+        output_files = await run_workflow(workflow_json)
+
+        output_urls = []
+        for file_path in output_files:
+            url = await upload_to_s3(file_path, generation_id)
+            output_urls.append(url)
+
+        metadata = {
+            "width": 0,  # Extract from video
+            "height": 0,
+            "frames": 0,
+            "fps": 0
+        }
+
+        update_generation_result(DB_PATH, generation_id, output_urls, metadata)
+
+        return MyWorkflowResponse(
+            generation_id=generation_id,
+            output_urls=output_urls,
+            output_metadata=metadata
+        )
+
+    except WorkflowError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
