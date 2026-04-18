@@ -1,12 +1,9 @@
-import logging
 from pathlib import Path
 from typing import Union
 
 import httpx
 
 from src.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 async def upload_to_s3(
@@ -56,5 +53,4 @@ async def upload_to_s3(
     if not url:
         raise RuntimeError("S3 upload succeeded but no URL returned")
 
-    logger.info("Uploaded %s -> %s", file_name, url)
     return url

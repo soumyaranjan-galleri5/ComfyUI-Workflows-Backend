@@ -48,13 +48,6 @@ async def generate_wan_animate(request: WanAnimateRequest):
     mapping = wan_animate
     params = request.model_dump()
 
-    print("\n" + "="*80)
-    print(f"🎬 WAN GENERATION STARTED: {slug}")
-    print("="*80)
-    print("\n📥 PARAMS FROM FRONTEND (before pre_build):")
-    import pprint
-    pprint.pprint(params, width=120, sort_dicts=False)
-
     # Run pre_build validation and transformation
     if mapping.pre_build:
         try:
@@ -62,8 +55,11 @@ async def generate_wan_animate(request: WanAnimateRequest):
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    print("\n✨ PARAMS AFTER PRE_BUILD (modified):")
-    pprint.pprint(params, width=120, sort_dicts=False)
+    # User-friendly output
+    width = params.get('width')
+    height = params.get('height')
+    frames = params.get('frames')
+    print(f"\nGenerating WAN Animate video: {width}x{height}, {frames} frames")
 
     # Log the generation request
     generation_id = log_generation_request(DB_PATH, slug, params)
@@ -80,32 +76,23 @@ async def generate_wan_animate(request: WanAnimateRequest):
         post_build=mapping.post_build if hasattr(mapping, 'post_build') else None,
     )
 
-    # Debug: Show injected workflow nodes
-    print("\n🔧 WORKFLOW NODES (after param injection):")
-    injected_node_ids = set(node_id for node_id, _ in mapping.PARAM_MAP.values())
-    print(f"  Showing {len(injected_node_ids)} nodes with injected parameters: {sorted(injected_node_ids)}\n")
-
-    for node_id in sorted(injected_node_ids, key=int):
-        if node_id in workflow:
-            print(f"\n  Node {node_id} - {workflow[node_id].get('class_type', 'Unknown')}:")
-            pprint.pprint(workflow[node_id].get('inputs', {}), width=120, indent=4)
-    print("\n" + "="*80 + "\n")
-
     # Execute workflow
     try:
         results = await run_workflow(workflow)
     except WorkflowError as e:
-        # Custom workflow errors with user-friendly messages
         raise HTTPException(status_code=400, detail=e.user_message)
-    except ConnectionError as e:
-        raise HTTPException(status_code=503, detail="Service unavailable: Cannot connect to ComfyUI")
-    except TimeoutError as e:
-        raise HTTPException(status_code=504, detail="Request timeout: Workflow took too long")
+    except ConnectionError:
+        raise HTTPException(status_code=503, detail="Cannot connect to video generation service")
+    except TimeoutError:
+        raise HTTPException(status_code=504, detail="Video generation timed out. Please try again")
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail="Workflow execution failed")
+        error_msg = str(e)
+        print(f"\nWorkflow error: {error_msg}")
+        raise HTTPException(status_code=500, detail="Video generation failed. Please check your inputs and try again")
     except Exception as e:
-        # Unexpected errors
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        error_msg = str(e)
+        print(f"\nUnexpected error: {error_msg}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again")
 
     # Extract output URLs and metadata
     output_urls = [result["s3_url"] for result in results if "s3_url" in result]
@@ -142,13 +129,6 @@ async def generate_wan_vace(request: WanVaceRequest):
     mapping = wan_vace_mask_edit
     params = request.model_dump()
 
-    print("\n" + "="*80)
-    print(f"🎬 WAN GENERATION STARTED: {slug}")
-    print("="*80)
-    print("\n📥 PARAMS FROM FRONTEND (before pre_build):")
-    import pprint
-    pprint.pprint(params, width=120, sort_dicts=False)
-
     # Run pre_build validation and transformation
     if mapping.pre_build:
         try:
@@ -156,8 +136,11 @@ async def generate_wan_vace(request: WanVaceRequest):
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    print("\n✨ PARAMS AFTER PRE_BUILD (modified):")
-    pprint.pprint(params, width=120, sort_dicts=False)
+    # User-friendly output
+    width = params.get('width')
+    height = params.get('height')
+    frames = params.get('frames')
+    print(f"\nGenerating WAN VACE video: {width}x{height}, {frames} frames")
 
     # Log the generation request
     generation_id = log_generation_request(DB_PATH, slug, params)
@@ -174,32 +157,23 @@ async def generate_wan_vace(request: WanVaceRequest):
         post_build=mapping.post_build if hasattr(mapping, 'post_build') else None,
     )
 
-    # Debug: Show injected workflow nodes
-    print("\n🔧 WORKFLOW NODES (after param injection):")
-    injected_node_ids = set(node_id for node_id, _ in mapping.PARAM_MAP.values())
-    print(f"  Showing {len(injected_node_ids)} nodes with injected parameters: {sorted(injected_node_ids)}\n")
-
-    for node_id in sorted(injected_node_ids, key=int):
-        if node_id in workflow:
-            print(f"\n  Node {node_id} - {workflow[node_id].get('class_type', 'Unknown')}:")
-            pprint.pprint(workflow[node_id].get('inputs', {}), width=120, indent=4)
-    print("\n" + "="*80 + "\n")
-
     # Execute workflow
     try:
         results = await run_workflow(workflow)
     except WorkflowError as e:
-        # Custom workflow errors with user-friendly messages
         raise HTTPException(status_code=400, detail=e.user_message)
-    except ConnectionError as e:
-        raise HTTPException(status_code=503, detail="Service unavailable: Cannot connect to ComfyUI")
-    except TimeoutError as e:
-        raise HTTPException(status_code=504, detail="Request timeout: Workflow took too long")
+    except ConnectionError:
+        raise HTTPException(status_code=503, detail="Cannot connect to video generation service")
+    except TimeoutError:
+        raise HTTPException(status_code=504, detail="Video generation timed out. Please try again")
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail="Workflow execution failed")
+        error_msg = str(e)
+        print(f"\nWorkflow error: {error_msg}")
+        raise HTTPException(status_code=500, detail="Video generation failed. Please check your inputs and try again")
     except Exception as e:
-        # Unexpected errors
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        error_msg = str(e)
+        print(f"\nUnexpected error: {error_msg}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again")
 
     # Extract output URLs and metadata
     output_urls = [result["s3_url"] for result in results if "s3_url" in result]

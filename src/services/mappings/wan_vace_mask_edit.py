@@ -41,10 +41,6 @@ PARAM_MAP = {
     # WanVaceToVideo strength parameters
     "vace_strength_high":    ("17",  "strength"),  # First pass (high noise)
     "vace_strength_low":     ("491", "strength"),  # Second pass (low noise)
-
-    # Output - Node 32 (VHS_VideoCombine)
-    "output_frame_rate":     ("32",  "frame_rate"),
-    "output_crf":            ("32",  "crf"),
 }
 
 
@@ -113,16 +109,6 @@ PARAM_META = {
         "label": "VACE Strength (Low Noise)",
         "group": "VACE Settings",
         "description": "Strength of VACE processing in second pass (0.0-1.0)",
-    },
-    "output_frame_rate": {
-        "label": "Frame Rate",
-        "group": "Output",
-        "description": "Frames per second of the output video",
-    },
-    "output_crf": {
-        "label": "CRF",
-        "group": "Output",
-        "description": "Video compression quality. Lower = better quality, larger file",
     },
 }
 
@@ -248,13 +234,9 @@ def pre_build(params: dict) -> dict:
         # Auto-detect and set frame rate
         if video_fps:
             detected_fps = int(round(video_fps))
-            print(f"[WAN VACE] Setting frame rate to detected: {detected_fps} fps")
-            params["output_frame_rate"] = detected_fps
+            print(f"[WAN VACE] Detected frame rate: {detected_fps} fps")
         else:
-            # Fallback to default if FPS detection fails
-            default_fps = params.get("output_frame_rate", 24)
-            params["output_frame_rate"] = default_fps
-            print(f"[WAN VACE] Using default frame rate: {default_fps} fps")
+            print(f"[WAN VACE] Could not detect frame rate from video")
 
     return params
 

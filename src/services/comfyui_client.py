@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import time
 import uuid
 from pathlib import Path
@@ -9,8 +8,6 @@ from typing import Any
 import httpx
 
 from src.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 class ComfyClient:
@@ -29,19 +26,8 @@ class ComfyClient:
             async with httpx.AsyncClient(timeout=10) as client:
                 response = await client.get(self._url("/system_stats"))
             response.raise_for_status()
-            stats = response.json()
-            devices = stats.get("devices", [])
-            if devices:
-                dev = devices[0]
-                vram = dev.get("vram_total", 0) / (1024**3)
-                logger.info(
-                    "Client connected | GPU: %s | VRAM: %.1f GB",
-                    dev.get("name", "unknown"),
-                    vram,
-                )
             return True
-        except Exception as e:
-            logger.error("Connect failed: %s", e)
+        except Exception:
             return False
 
     async def upload_file(
@@ -64,7 +50,6 @@ class ComfyClient:
         result = response.json()
 
         filename = result.get("name", path.name)
-        logger.info("Uploaded %s -> %s", path.name, filename)
         return filename
 
     async def queue_prompt(self, workflow: dict[str, Any]) -> str:
@@ -72,10 +57,6 @@ class ComfyClient:
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(self._url("/prompt"), json=payload)
-        if response.status_code != 200:
-            logger.error(
-                "ComfyUI /prompt error %s: %s", response.status_code, response.text
-            )
         response.raise_for_status()
         result = response.json()
 
@@ -83,7 +64,6 @@ class ComfyClient:
             raise RuntimeError(f"ComfyUI queue error: {result['error']}")
 
         prompt_id = result["prompt_id"]
-        logger.info("Queued prompt %s", prompt_id)
         return prompt_id
 
     async def get_history(self, prompt_id: str) -> dict | None:
@@ -97,7 +77,6 @@ class ComfyClient:
         self, prompt_id: str, poll_interval: float = 2.0
     ) -> dict:
         start = time.time()
-        logger.info("Waiting for prompt %s ...", prompt_id[:12])
 
         while True:
             elapsed = time.time() - start
@@ -112,9 +91,6 @@ class ComfyClient:
                 if status.get("status_str") == "error":
                     msg = json.dumps(status, indent=2, ensure_ascii=False)
                     raise RuntimeError(f"Execution failed:\n{msg}")
-                logger.info(
-                    "Prompt %s completed in %.1fs", prompt_id[:12], elapsed
-                )
                 return history
 
             await asyncio.sleep(poll_interval)
@@ -131,10 +107,8 @@ class ComfyClient:
         ]
         for local_path in candidates:
             if local_path.exists():
-                logger.info("Reading output from local path: %s", local_path)
                 return local_path.read_bytes()
 
-        logger.info("Downloading output via API: %s", filename)
         params = {"filename": filename, "type": file_type, "subfolder": subfolder}
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(self._url("/view"), params=params)

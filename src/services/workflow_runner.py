@@ -1,5 +1,4 @@
 import base64
-import logging
 import tempfile
 import uuid
 from pathlib import Path
@@ -15,8 +14,6 @@ from src.exceptions import (
 )
 from src.services.comfyui_client import ComfyClient
 from src.services.s3_upload import upload_to_s3
-
-logger = logging.getLogger(__name__)
 
 
 def _is_base64(value: str) -> bool:
@@ -86,14 +83,11 @@ async def _download_url(url: str, save_dir: Path) -> Path:
                 expected=", ".join(expected),
                 actual=detected_mime
             )
-
-        logger.info("URL validation passed: %s (%s)", url, detected_mime)
     except ImportError:
-        logger.warning("python-magic not installed, skipping URL MIME validation")
+        pass
 
     # Save validated content
     save_path.write_bytes(file_content)
-    logger.info("Downloaded %s -> %s", url, save_path)
     return save_path
 
 
@@ -137,7 +131,6 @@ async def resolve_and_upload(
         save_dir.mkdir(parents=True, exist_ok=True)
         save_path = save_dir / f"b64_{uuid.uuid4().hex[:8]}{ext}"
         save_path.write_bytes(_decode_base64(value))
-        logger.info("Decoded base64 -> %s", save_path)
         return await client.upload_file(str(save_path))
 
     # Already a filename in ComfyUI input folder
@@ -145,13 +138,12 @@ async def resolve_and_upload(
 
 
 def _safe_unlink(path: Path, label: str) -> None:
-    """Delete a file, logging (not raising) on failure so cleanup loops continue."""
+    """Delete a file, suppressing errors on failure so cleanup loops continue."""
     try:
         if path.exists():
             path.unlink()
-            logger.info("Cleaned up ComfyUI %s: %s", label, path)
-    except OSError as e:
-        logger.warning("Failed to delete ComfyUI %s %s: %s", label, path, e)
+    except OSError:
+        pass
 
 
 def _cleanup_comfyui_files(input_files: list[str], output_files: list[dict]):
@@ -261,12 +253,6 @@ async def run_workflow(workflow: dict[str, Any]) -> list[dict]:
                     content_type = "video/mp4" if media_type == "video" else "image/png"
                     s3_url = await upload_to_s3(local_path, content_type)
 
-                    logger.info(
-                        "Output: node=%s file=%s -> %s",
-                        node_id,
-                        filename,
-                        s3_url,
-                    )
                     results.append(
                         {
                             "node_id": node_id,
@@ -282,8 +268,6 @@ async def run_workflow(workflow: dict[str, Any]) -> list[dict]:
 
         finally:
             # Always cleanup ComfyUI files, even if workflow execution fails
-            logger.info("Cleaning up ComfyUI files (inputs: %d, outputs: %d)",
-                       len(uploaded_input_files), len(all_output_file_infos))
             _cleanup_comfyui_files(uploaded_input_files, all_output_file_infos)
 
     # temp dir auto-deleted here

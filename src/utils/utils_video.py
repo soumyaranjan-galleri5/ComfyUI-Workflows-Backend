@@ -117,22 +117,24 @@ def wan_calculate_aspect_ratio_dimensions(
 ) -> tuple[int, int]:
     """Calculate width that maintains aspect ratio for given target height.
 
-    Width is rounded to the nearest multiple of 8 for WAN VAE compatibility
-    (8x spatial downsampling). Caller must pass target_height divisible by 8
-    (e.g., 480, 720).
+    Width is rounded to the nearest multiple of 16 for VACE compatibility.
+    VACE architecture requires:
+    - VAE spatial compression: [1+T/4, H/8, W/8]
+    - Transformer patchifying: (1+T/4) × H/16 × W/16
+    Therefore both H and W must be divisible by 16.
 
     Args:
-        target_height: Desired output height (must be multiple of 8)
+        target_height: Desired output height (must be multiple of 16)
         original_width: Original video width
         original_height: Original video height
 
     Returns:
-        Tuple of (new_width, target_height) with width rounded to multiple of 8
+        Tuple of (new_width, target_height) with width rounded to multiple of 16
     """
     aspect_ratio = original_width / original_height
     new_width = int(target_height * aspect_ratio)
 
-    # Round to nearest multiple of 8 (important for video encoding)
-    new_width = (new_width + 4) // 8 * 8
+    # Round to nearest multiple of 16 (required for VACE transformer patchifying)
+    new_width = round(new_width / 16) * 16
 
     return new_width, target_height
