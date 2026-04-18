@@ -1,0 +1,820 @@
+{
+  "15": {
+    "inputs": {
+      "text": " A bald man with dark skin and clean shaven face, wearing golden ornate battle armor with intricate engravings and no crown, standing in a dusty battlefield with warm golden sunlight,      \n  intense focused expression, cinematic dramatic lighting, highly detailed skin texture, detailed armor reflections, smooth natural motion.",
+      "clip": [
+        "549",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "16": {
+    "inputs": {
+      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+      "clip": [
+        "549",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "17": {
+    "inputs": {
+      "width": [
+        "19",
+        0
+      ],
+      "height": [
+        "20",
+        0
+      ],
+      "length": [
+        "21",
+        0
+      ],
+      "batch_size": 1,
+      "strength": 0.55,
+      "positive": [
+        "15",
+        0
+      ],
+      "negative": [
+        "16",
+        0
+      ],
+      "vae": [
+        "529",
+        0
+      ],
+      "control_video": [
+        "479",
+        0
+      ],
+      "control_masks": [
+        "481",
+        0
+      ],
+      "reference_image": [
+        "472",
+        0
+      ]
+    },
+    "class_type": "WanVaceToVideo",
+    "_meta": {
+      "title": "WanVaceToVideo"
+    }
+  },
+  "19": {
+    "inputs": {
+      "value": 832
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "widh"
+    }
+  },
+  "20": {
+    "inputs": {
+      "value": 480
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "height"
+    }
+  },
+  "21": {
+    "inputs": {
+      "value": 53
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "frames"
+    }
+  },
+  "30": {
+    "inputs": {
+      "trim_amount": [
+        "491",
+        3
+      ],
+      "samples": [
+        "552",
+        0
+      ]
+    },
+    "class_type": "TrimVideoLatent",
+    "_meta": {
+      "title": "TrimVideoLatent"
+    }
+  },
+  "31": {
+    "inputs": {
+      "samples": [
+        "30",
+        0
+      ],
+      "vae": [
+        "529",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "32": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "wan2_2-Fun-Vace/wan_video",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "48": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM",
+    "_meta": {
+      "title": "LayerUtility: Purge VRAM"
+    }
+  },
+  "91": {
+    "inputs": {
+      "video_info": [
+        "495",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoInfo",
+    "_meta": {
+      "title": "Video Info 🎥🅥🅗🅢"
+    }
+  },
+  "92": {
+    "inputs": {
+      "width": [
+        "19",
+        0
+      ],
+      "height": [
+        "20",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "resize",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "493",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "448": {
+    "inputs": {
+      "value": 8888888
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "Seed"
+    }
+  },
+  "449": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "Sampling Steps"
+    }
+  },
+  "460": {
+    "inputs": {
+      "video": "Videooutput_00001-audio.mp4",
+      "force_rate": 0,
+      "custom_width": [
+        "19",
+        0
+      ],
+      "custom_height": [
+        "20",
+        0
+      ],
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "Wan"
+    },
+    "class_type": "VHS_LoadVideo",
+    "_meta": {
+      "title": "Load Video (Upload) 🎥🅥🅗🅢"
+    }
+  },
+  "465": {
+    "inputs": {
+      "image": "head-shot-man-thinking-5945180.webp"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "467": {
+    "inputs": {
+      "images": [
+        "468",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "468": {
+    "inputs": {
+      "width": [
+        "19",
+        0
+      ],
+      "height": [
+        "20",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "resize",
+      "pad_color": "255,255,255",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "496",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "472": {
+    "inputs": {
+      "model": "RMBG-2.0",
+      "sensitivity": 1,
+      "process_res": 480,
+      "mask_blur": 0,
+      "mask_offset": 0,
+      "invert_output": false,
+      "refine_foreground": false,
+      "background": "Color",
+      "background_color": "#f2f2f2",
+      "image": [
+        "468",
+        0
+      ]
+    },
+    "class_type": "RMBG",
+    "_meta": {
+      "title": "Remove Background (RMBG)"
+    }
+  },
+  "475": {
+    "inputs": {
+      "model_name": "GroundingDINO_SwinB (938MB)"
+    },
+    "class_type": "GroundingDinoModelLoader (segment anything)",
+    "_meta": {
+      "title": "GroundingDinoModelLoader (segment anything)"
+    }
+  },
+  "476": {
+    "inputs": {
+      "prompt": "human",
+      "threshold": 0.3,
+      "sam_model": [
+        "478",
+        0
+      ],
+      "grounding_dino_model": [
+        "475",
+        0
+      ],
+      "image": [
+        "92",
+        0
+      ]
+    },
+    "class_type": "GroundingDinoSAMSegment (segment anything)",
+    "_meta": {
+      "title": "GroundingDinoSAMSegment (segment anything)"
+    }
+  },
+  "478": {
+    "inputs": {
+      "model_name": "sam_vit_h (2.56GB)"
+    },
+    "class_type": "SAMModelLoader (segment anything)",
+    "_meta": {
+      "title": "SAMModelLoader (segment anything)"
+    }
+  },
+  "479": {
+    "inputs": {
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "image": [
+        "92",
+        0
+      ],
+      "mask": [
+        "480",
+        0
+      ]
+    },
+    "class_type": "Mix Color By Mask",
+    "_meta": {
+      "title": "Mix Color By Mask"
+    }
+  },
+  "480": {
+    "inputs": {
+      "mask": [
+        "481",
+        0
+      ]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "Convert Mask to Image"
+    }
+  },
+  "481": {
+    "inputs": {
+      "expand": 15,
+      "incremental_expandrate": 0,
+      "tapered_corners": true,
+      "flip_input": false,
+      "blur_radius": 1,
+      "lerp_alpha": 1,
+      "decay_factor": 1,
+      "fill_holes": true,
+      "mask": [
+        "483",
+        0
+      ]
+    },
+    "class_type": "GrowMaskWithBlur",
+    "_meta": {
+      "title": "Grow Mask With Blur"
+    }
+  },
+  "482": {
+    "inputs": {
+      "images": [
+        "472",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "483": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "476",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM V2",
+    "_meta": {
+      "title": "LayerUtility: Purge VRAM V2"
+    }
+  },
+  "484": {
+    "inputs": {
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": 512,
+      "bbox_detector": "yolox_l.onnx",
+      "pose_estimator": "dw-ll_ucoco_384.onnx",
+      "scale_stick_for_xinsr_cn": "disable",
+      "image": [
+        "92",
+        0
+      ]
+    },
+    "class_type": "DWPreprocessor",
+    "_meta": {
+      "title": "DWPose Estimator"
+    }
+  },
+  "491": {
+    "inputs": {
+      "width": [
+        "19",
+        0
+      ],
+      "height": [
+        "20",
+        0
+      ],
+      "length": [
+        "21",
+        0
+      ],
+      "batch_size": 1,
+      "strength": 0.55,
+      "positive": [
+        "17",
+        0
+      ],
+      "negative": [
+        "17",
+        1
+      ],
+      "vae": [
+        "529",
+        0
+      ],
+      "control_video": [
+        "484",
+        0
+      ],
+      "reference_image": [
+        "472",
+        0
+      ]
+    },
+    "class_type": "WanVaceToVideo",
+    "_meta": {
+      "title": "WanVaceToVideo"
+    }
+  },
+  "493": {
+    "inputs": {
+      "any_01": [
+        "460",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "494": {
+    "inputs": {
+      "any_01": [
+        "460",
+        2
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "495": {
+    "inputs": {
+      "any_01": [
+        "460",
+        3
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "496": {
+    "inputs": {
+      "any_02": [
+        "465",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "528": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp16.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "529": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "535": {
+    "inputs": {
+      "sage_attention": "disabled",
+      "allow_compile": false,
+      "model": [
+        "537",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "536": {
+    "inputs": {
+      "unet_name": "WAN 2.2/Fun/wan2.2_fun_vace_high_noise_14B_fp8_scaled.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "537": {
+    "inputs": {
+      "any_02": [
+        "536",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "539": {
+    "inputs": {
+      "unet_name": "WAN 2.2/Fun/wan2.2_fun_vace_low_noise_14B_fp8_scaled.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "540": {
+    "inputs": {
+      "any_02": [
+        "539",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "541": {
+    "inputs": {
+      "sage_attention": "disabled",
+      "allow_compile": false,
+      "model": [
+        "540",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "544": {
+    "inputs": {
+      "lora_name": "lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "541",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "549": {
+    "inputs": {
+      "lora_name": "lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": [
+        "535",
+        0
+      ],
+      "clip": [
+        "528",
+        0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "550": {
+    "inputs": {
+      "shift": [
+        "557",
+        0
+      ],
+      "model": [
+        "570",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "551": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": [
+        "448",
+        0
+      ],
+      "steps": [
+        "449",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "beta",
+      "start_at_step": 0,
+      "end_at_step": 2,
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "550",
+        0
+      ],
+      "positive": [
+        "491",
+        0
+      ],
+      "negative": [
+        "491",
+        1
+      ],
+      "latent_image": [
+        "491",
+        2
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced)"
+    }
+  },
+  "552": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": [
+        "448",
+        0
+      ],
+      "steps": [
+        "449",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "beta",
+      "start_at_step": 2,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "553",
+        0
+      ],
+      "positive": [
+        "491",
+        0
+      ],
+      "negative": [
+        "491",
+        1
+      ],
+      "latent_image": [
+        "551",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced)"
+    }
+  },
+  "553": {
+    "inputs": {
+      "shift": [
+        "557",
+        0
+      ],
+      "model": [
+        "569",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "557": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "FloatConstant",
+    "_meta": {
+      "title": "Shift"
+    }
+  },
+  "568": {
+    "inputs": {},
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "569": {
+    "inputs": {
+      "lora_name": "Wan2_2/Wan2.2-Fun-A14B-InP-low-noise-HPS2.1.safetensors",
+      "strength_model": 1,
+      "model": [
+        "544",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "570": {
+    "inputs": {
+      "lora_name": "Wan2_2/Wan2.2-Fun-A14B-InP-high-noise-HPS2.1.safetensors",
+      "strength_model": 0.6,
+      "model": [
+        "549",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  }
+}

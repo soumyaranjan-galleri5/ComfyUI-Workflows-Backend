@@ -2,6 +2,18 @@
     {
         "slug": "wan2-2-animate-character-swap",
         "pipeline": "WanVideo Animate - Swap Characters & Lip Sync",
-        "capabilities": ["character-swap", "lip-sync", "pose-retarget"]
+        "capabilities": [
+            "character-swap",
+            "lip-sync",
+            "pose-retarget"
+        ]
+    },
+    {
+        "slug": "wan2-2-fun-vace-mask-edit-controlnet",
+        "pipeline": "Wan VACE - Mask Edit + ControlNet",
+        "capabilities": [
+            "mask-edit",
+            "controlnet"
+        ]
     }
 ]
